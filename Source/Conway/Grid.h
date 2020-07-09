@@ -19,7 +19,7 @@ class CONWAY_API AGrid : public AActor
 {
 	GENERATED_BODY()
 private:
-	void redrawHelper(int d1, int d2, int d3, float hue);
+	void redrawHelper(int dx, float hue);
 	int countAliveAdjacencies(int d1, int d2, int d3);
 public:	
 	// Sets default values for this actor's properties
