@@ -21,11 +21,13 @@ class CONWAY_API AGrid : public AActor
 private:
 	void redrawHelper(int dx, float hue);
 	int countAliveAdjacencies(int d1, int d2, int d3);
+	int countAliveAdjacencies(UCell* cell);
 public:	
 	// Sets default values for this actor's properties
 	// When I want to make this modular, add a Tarray of ints for the cell dimensions.
 	// Then you can iterate over them for your dimensions
 	AGrid();
+	int coordsToIndex(TArray<int> coords);
 	UFUNCTION(BlueprintCallable, Category = Next)
 		void checkGame();
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = vars)

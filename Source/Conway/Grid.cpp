@@ -7,20 +7,22 @@
 AGrid::AGrid()
 {
     count = 5;
-    dimensions.Add(count);
-    dimensions.Add(count);
-    dimensions.Add(count);
+    dimensions.Add(5);
+    dimensions.Add(5);
+    dimensions.Add(5);
+    dimensions.Add(5);
+    //dimensions.Add(count);
 
     for (int i = 0; i <= 3; i++)
         dieConds.Add(i);
 
     for (int i = 5; i <= 5; i++)
         bornConds.Add(i);
-    for (int i = 6; i <= 26; i++)
+    for (int i = 6; i <= 80; i++)
         dieConds.Add(i);
 
     // bornConds.Add(3);
-     // Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+    // Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
     PrimaryActorTick.bCanEverTick = true;
     UBoxComponent* BoxComponent = CreateDefaultSubobject<UBoxComponent>(TEXT("RootComponent"));
     RootComponent = BoxComponent;
@@ -28,6 +30,17 @@ AGrid::AGrid()
     this->redraw();
 
     //cells[count / 2 * count * count + count / 2 * count + count / 2]->Toggle();
+}
+int AGrid::coordsToIndex(TArray<int> coords)
+{
+    int index = 0;
+    int offset = 1;
+    for (int i = 0; i < dimensions.Num(); i++)
+    {
+        index += coords[i] * offset;
+        offset *= dimensions[i];
+    }
+    return index;
 }
 void AGrid::redraw()
 {
@@ -54,11 +67,11 @@ void AGrid::redrawHelper(int32 dx, float hue)
     TArray<int> coords;
     int index = dx;
     int div = 1;
-    coords.Add(dx % dimensions[0]);
 
+    coords.Add(dx % dimensions[0]);
     for (int d = 1; d < dimensions.Num(); d++)
     {
-        div *= dimensions[d-1];
+        div *= dimensions[d - 1];
         coords.Add(dx / div  % dimensions[d]);
         /*
         if (index < dimensions[d])
@@ -105,7 +118,22 @@ void AGrid::redrawHelper(int32 dx, float hue)
     UMaterialInstanceDynamic* mat = UMaterialInstanceDynamic::Create(NewComp->GetMaterial(0), NewComp);
     //UE_LOG(LogTemp, Log, TEXT("%s"), *(NewComp->GetTransform().ToString()));
 
-    NewComp->SetRelativeLocation(FVector(coords[0] * 100, coords[1] * 100/* + (d4 * (count * 100 + 100))*/, coords[2] * 100));
+    TArray<float> location;
+    location.Add(0.0);
+    location.Add(0.0);
+    location.Add(0.0);
+    for (int i = 0; i < coords.Num(); i++)
+    {
+        if (i < 3)
+        {
+            location[i % 3] = coords[i] * 100;
+        }
+        else
+        {
+            location[i % 3] += coords[i] * (dimensions[i%3] * 100  + 100);
+        }
+    }
+    NewComp->SetRelativeLocation(FVector(location[0], location[1], location[2]));
     NewComp->coords = coords;
     NewComp->x = coords[0];
     NewComp->y = coords[1];
@@ -130,11 +158,54 @@ void AGrid::redrawHelper(int32 dx, float hue)
 void AGrid::BeginPlay()
 {
     Super::BeginPlay();
-
 }
 
+int AGrid::countAliveAdjacencies(UCell* cell)
+{
+
+    TArray<int> coords = cell->coords;
+    int adjacencyCount = 1;
+    for (int d : dimensions){adjacencyCount *= 3;}
+
+    int aliveCount = 0;
+    for (int adjIndex = 0; adjIndex <= adjacencyCount - 1; adjIndex++)
+    {
+
+        // skip self
+        if (adjIndex == adjacencyCount / 2)
+            continue;
+        int div = 1;
+
+        TArray<int> adj;
+        for (int d = 0; d < dimensions.Num(); d++)
+        {
+            int offset = adjIndex / div % 3 - 1;
+            adj.Add(coords[d] + offset);
+            div *= 3;
+        }
+        
+        bool validIndex = true;
+        for (int i = 0; i < dimensions.Num(); i++)
+        {
+            if (adj[i] < 0 || adj[i] >= dimensions[i])
+                validIndex = false;
+        }
+        int index = coordsToIndex(adj);
+
+        if (validIndex && cells[index]->isAlive)
+        {
+            aliveCount++;
+        }
+        //UE_LOG(LogTemp, Warning, TEXT("Checking Game: %d"), w);
+        FString f;
+
+        // UE_LOG(LogTemp, Warning, TEXT("Checking Game: %d%d%d"), adj[0], adj[1], adj[2]);
+    }
+    return aliveCount;
+}
 int AGrid::countAliveAdjacencies(int d3, int d2, int d1)
 {
+    
     int adjCount = 0;
     for (int i = -1; i <= 1; i++)
         for (int j = -1; j <= 1; j++)
@@ -159,72 +230,31 @@ int AGrid::countAliveAdjacencies(int d3, int d2, int d1)
 //check the game for updates
 void AGrid::checkGame()
 {
-    ParallelFor(count, [&](uint32 d3) {
-        ParallelFor(count, [&](uint32 d2) {
-            ParallelFor(count, [&](uint32 d1) {
-                int index = d3 * count * count + d2 * count + d1;
-                UCell* cell = cells[index];
+    int max = 1;
+    for (int i : dimensions)
+    {
+        max *= i;
+    }
+    ParallelFor(max, [&](uint32 index)
+    {
+            UCell* cell = cells[index];
 
-                int adj = countAliveAdjacencies(d3, d2, d1);
-                for (int b : bornConds)
-                    if (adj == b && !cell->isAlive)
-                        cell->willToggle = true;
-                for (int d : dieConds)
-                    if (adj == d && cell->isAlive)
-                        cell->willToggle = true;
-                });
-            });
-        });
-    /*   for (int d3 = 0; d3 < count; d3++)
-           for (int d2 = 0; d2 < count; d2++)
-               for (int d1 = 0; d1 < count; d1++)
-               {
-                   int index = d3 * count * count + d2 * count + d1;
-                   UCell* cell = cells[index];
+            int adj = countAliveAdjacencies(cell);
+            UE_LOG(LogTemp, Warning, TEXT("%d"), adj);
+            for (int b : bornConds)
+                if (adj == b && !cell->isAlive)
+                    cell->willToggle = true;
+            for (int d : dieConds)
+                if (adj == d && cell->isAlive)
+                    cell->willToggle = true;
+    });
 
-                   int adj = countAliveAdjacencies(d3, d2, d1);
-                   if (adj <= 8)
-                   {
-                       UE_LOG(LogTemp, Warning, TEXT("Toggling: %d"), adj);
-                   }
-                   for (int b : bornConds)
-                       if (adj == b && !cell->isAlive)
-                           cell->willToggle = true;
-                   for (int d : dieConds)
-                       if (adj == d && cell->isAlive)
-                           cell->willToggle = true;
-               }*/
     FCriticalSection Mutex;
-
-    ParallelFor(count * count * count, [&](int32 cell) {
+    ParallelFor(max, [&](int32 cell) {
         Mutex.Lock();
         cells[cell]->checkStatus();
         Mutex.Unlock();
         });
-    /*
-    ParallelFor(count* count* count, [&](int32 cell) {
-
-        if (cells[cell]->willToggle)
-        {
-            cells[cell]->willToggle = false;
-            cells[cell]->isAlive = !cells[cell]->isAlive;
-            if (cells[cell]->isAlive)
-            {
-                Mutex.Lock();
-                cells[cell]->SetVisibility(true);
-                Mutex.Unlock();
-
-            }
-            else
-            {
-                Mutex.Lock();
-                cells[cell]->SetVisibility(false);
-                Mutex.Unlock();
-            }
-        }
-        });*/
-        //for (UCell* cell : cells)
-        //    cell->checkStatus();
 }
 float timeAgg = 0.0;
 // Called every frame

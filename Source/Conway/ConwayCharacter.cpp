@@ -35,35 +35,35 @@ AConwayCharacter::AConwayCharacter()
 	BaseTurnRate = 45.f;
 	BaseLookUpRate = 45.f;
 
-	// Create a CameraComponent	
+	// Create a CameraComponent
 	FirstPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
 	FirstPersonCameraComponent->SetupAttachment(GetCapsuleComponent());
 	FirstPersonCameraComponent->SetRelativeLocation(FVector(-39.56f, 1.75f, 64.f)); // Position the camera
 	FirstPersonCameraComponent->bUsePawnControlRotation = true;
 
 	// Create a mesh component that will be used when being viewed from a '1st person' view (when controlling this pawn)
-	Mesh1P = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("CharacterMesh1P"));
-	Mesh1P->SetOnlyOwnerSee(true);
-	Mesh1P->SetupAttachment(FirstPersonCameraComponent);
-	Mesh1P->bCastDynamicShadow = false;
-	Mesh1P->CastShadow = false;
-	Mesh1P->SetRelativeRotation(FRotator(1.9f, -19.19f, 5.2f));
-	Mesh1P->SetRelativeLocation(FVector(-0.5f, -4.4f, -155.7f));
+	//Mesh1P = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("CharacterMesh1P"));
+	//Mesh1P->SetOnlyOwnerSee(true);
+	//Mesh1P->SetupAttachment(FirstPersonCameraComponent);
+	//Mesh1P->bCastDynamicShadow = false;
+	//Mesh1P->CastShadow = false;
+	//Mesh1P->SetRelativeRotation(FRotator(1.9f, -19.19f, 5.2f));
+	//Mesh1P->SetRelativeLocation(FVector(-0.5f, -4.4f, -155.7f));
 
 	// Create a gun mesh component
-	FP_Gun = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("FP_Gun"));
-	FP_Gun->SetOnlyOwnerSee(true);			// only the owning player will see this mesh
-	FP_Gun->bCastDynamicShadow = false;
-	FP_Gun->CastShadow = false;
+	//FP_Gun = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("FP_Gun"));
+	//FP_Gun->SetOnlyOwnerSee(true);			// only the owning player will see this mesh
+	//FP_Gun->bCastDynamicShadow = false;
+	//FP_Gun->CastShadow = false;
 	// FP_Gun->SetupAttachment(Mesh1P, TEXT("GripPoint"));
-	FP_Gun->SetupAttachment(RootComponent);
+	//FP_Gun->SetupAttachment(RootComponent);
 
-	FP_MuzzleLocation = CreateDefaultSubobject<USceneComponent>(TEXT("MuzzleLocation"));
-	FP_MuzzleLocation->SetupAttachment(FP_Gun);
-	FP_MuzzleLocation->SetRelativeLocation(FVector(0.2f, 48.4f, -10.6f));
+	//FP_MuzzleLocation = CreateDefaultSubobject<USceneComponent>(TEXT("MuzzleLocation"));
+	//FP_MuzzleLocation->SetupAttachment(FP_Gun);
+	//FP_MuzzleLocation->SetRelativeLocation(FVector(0.2f, 48.4f, -10.6f));
 
 	// Default offset from the character location for projectiles to spawn
-	GunOffset = FVector(100.0f, 0.0f, 10.0f);
+	//GunOffset = FVector(100.0f, 0.0f, 10.0f);
 
 	// Note: The ProjectileClass and the skeletal mesh/anim blueprints for Mesh1P, FP_Gun, and VR_Gun 
 	// are set in the derived blueprint asset named MyCharacter to avoid direct content references in C++.
@@ -76,7 +76,8 @@ AConwayCharacter::AConwayCharacter()
 	L_MotionController->SetupAttachment(RootComponent);
 
 	// Create a gun and attach it to the right-hand VR controller.
-	// Create a gun mesh component
+	// Create a gun mesh componen
+	/*t
 	VR_Gun = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("VR_Gun"));
 	VR_Gun->SetOnlyOwnerSee(true);			// only the owning player will see this mesh
 	VR_Gun->bCastDynamicShadow = false;
@@ -88,7 +89,7 @@ AConwayCharacter::AConwayCharacter()
 	VR_MuzzleLocation->SetupAttachment(VR_Gun);
 	VR_MuzzleLocation->SetRelativeLocation(FVector(0.000004, 53.999992, 10.000000));
 	VR_MuzzleLocation->SetRelativeRotation(FRotator(0.0f, 90.0f, 0.0f));		// Counteract the rotation of the VR gun model.
-
+	*/
 	// Uncomment the following line to turn motion controllers on by default:
 	//bUsingMotionControllers = true;
 }
@@ -99,18 +100,18 @@ void AConwayCharacter::BeginPlay()
 	Super::BeginPlay();
 
 	//Attach gun mesh component to Skeleton, doing it here because the skeleton is not yet created in the constructor
-	FP_Gun->AttachToComponent(Mesh1P, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), TEXT("GripPoint"));
+	//FP_Gun->AttachToComponent(Mesh1P, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), TEXT("GripPoint"));
 
 	// Show or hide the two versions of the gun based on whether or not we're using motion controllers.
 	if (bUsingMotionControllers)
 	{
-		VR_Gun->SetHiddenInGame(false, true);
-		Mesh1P->SetHiddenInGame(true, true);
+		//VR_Gun->SetHiddenInGame(false, true);
+		//Mesh1P->SetHiddenInGame(true, true);
 	}
 	else
 	{
-		VR_Gun->SetHiddenInGame(true, true);
-		Mesh1P->SetHiddenInGame(false, true);
+		//VR_Gun->SetHiddenInGame(true, true);
+		//Mesh1P->SetHiddenInGame(false, true);
 	}
 	TArray<AGrid*> outGrid;
 	/*
@@ -140,9 +141,10 @@ void AConwayCharacter::StepAutomata()
 {
 
 }
-void AConwayCharacter::DeleteCell()
+
+FHitResult AConwayCharacter::GetCellByLineTrace()
 {
-	APlayerCameraManager * camera = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0);
+	APlayerCameraManager* camera = UGameplayStatics::GetPlayerCameraManager(GetWorld(), 0);
 	FVector start = camera->GetCameraLocation();
 	FVector finish = this->GetFirstPersonCameraComponent()->GetForwardVector() * 3000 + start;
 	FHitResult result;
@@ -152,25 +154,60 @@ void AConwayCharacter::DeleteCell()
 
 	FCollisionQueryParams CollisionParams;
 	CollisionParams.TraceTag = TraceTag;
-	bool hit = this->GetWorld()->LineTraceSingleByChannel(result,start, finish, ECollisionChannel::ECC_Visibility, CollisionParams);
-	DrawDebugLine(
+	this->GetWorld()->LineTraceSingleByChannel(result, start, finish, ECollisionChannel::ECC_Visibility, CollisionParams);
+	UCell* cell = (UCell*)(result.GetComponent());
+
+
+	/*DrawDebugLine(
 		GetWorld(),
 		start,
 		result.Location,
 		FColor(0,0,255),
 		false, 1.0f, 0,
 		2.0
-	);
-	//UE_LOG(LogTemp, Warning, TEXT("Hi"));
-	//UE_LOG(LogTemp, Warning, TEXT("%s"), hit ? TEXT("True") : TEXT("False"));
+	);*/
+
+	return result;
+}
+void AConwayCharacter::AddCell()
+{
+	FHitResult hit = GetCellByLineTrace();
+	UCell* cell = (UCell*)hit.GetComponent();
+	if (!cell || !cell->isAlive)
+		return;
+	AGrid* grid = (AGrid*)hit.GetActor();
+	FVector impact = hit.ImpactNormal;
+	TArray<int> side;
+	side.Add(impact.X);
+	side.Add(impact.Y);
+	side.Add(impact.Z);
+	TArray<int> addCoords;
+	for (int i = 0; i < cell->coords.Num(); i++)
+	{
+		if (i >= side.Num())
+		{
+			addCoords.Add(cell->coords[i]);
+		}
+		else if (side[i] + cell->coords[i] < 0 || side[i] + cell->coords[i] >= grid->dimensions[i])
+			return;
+		else if (i < side.Num())
+			addCoords.Add(side[i] + cell->coords[i]);
+		else
+			addCoords.Add(cell->coords[i]);
+	}
+	grid->cells[grid->coordsToIndex(addCoords)]->Toggle();
+
+}
+void AConwayCharacter::DeleteCell()
+{
+	FHitResult hit = GetCellByLineTrace();
 	
 
-	UCell* cell = (UCell*)(result.GetComponent());
+	UCell* cell = (UCell*)(hit.GetComponent());
 	
 	if (cell && cell->isAlive)
 	{
-
-		UE_LOG(LogTemp, Warning, TEXT("%s"), *result.GetComponent()->GetClass()->GetName());
+		UE_LOG(LogTemp, Warning, TEXT("%s"), *cell->GetName());
 		cell->Toggle();
 	}
 }
@@ -190,9 +227,12 @@ void AConwayCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerIn
 	//PlayerInputComponent->BindAction("Delete",EInputEvent::IE_Repeat, this, &AConwayCharacter::DeleteCell);
 
 	PlayerInputComponent->BindAction("Delete", IE_Pressed, this, &AConwayCharacter::DeleteCell);
+	//PlayerInputComponent->BindAction("Delete", IE_Pressed, this, &AConwayCharacter::StartDeleting);
+	//PlayerInputComponent->BindAction("Delete", IE_Released, this, &AConwayCharacter::StopDeleting);
 	
 	PlayerInputComponent->BindAction("ToggleDelete", IE_Pressed, this, &AConwayCharacter::StartDeleting);
 	PlayerInputComponent->BindAction("ToggleDelete", IE_Released, this, &AConwayCharacter::StopDeleting);
+	PlayerInputComponent->BindAction("Delete", IE_Released, this, &AConwayCharacter::StopDeleting);
 	// Bind Next
 	PlayerInputComponent->BindAction("Next", IE_Pressed, this, &AConwayCharacter::StepAutomata);
 	// Enable touchscreen input

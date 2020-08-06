@@ -102,8 +102,13 @@ protected:
 	void MoveDown(float Val);
 	void MoveRight(float Val);
 
+	// line trace to get pointed cell
+	FHitResult GetCellByLineTrace();
 	//delete a cell
 	void DeleteCell();
+	// add a cell
+	UFUNCTION(BlueprintCallable, Category = Next)
+	void AddCell();
 
 	bool isDeleting = false;
 	void StartDeleting(){isDeleting = true;}
